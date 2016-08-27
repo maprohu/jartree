@@ -1,8 +1,10 @@
 package jartree
 
+import java.io.{InputStream, OutputStream}
 import java.net.URL
 
 import jartree.JarTree._
+import org.reactivestreams.Processor
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -108,6 +110,28 @@ class JarTree(
     producer()
   }
 
+  def run(
+    request: RunRequest,
+    processor: Processor[Array[Byte], Array[Byte]]
+  )(implicit
+    executionContext: ExecutionContext
+  ) : Future[Unit] = {
+    for {
+      cl <- get(request.classLoader)
+    } yield {
+      val runClass = cl.loadClass(request.className)
+      val method = runClass.getMethod(
+        request.methodName,
+        classOf[Processor[_, _]]
+      )
+      method.invoke(
+        runClass.newInstance(),
+        processor
+      )
+    }
+
+  }
+
 
 }
 
@@ -129,6 +153,12 @@ case class URLJarSource(
 case class ClassLoaderRequest(
   jar: JarRequest,
   parents: Seq[ClassLoaderRequest]
+)
+
+case class RunRequest(
+  classLoader: ClassLoaderRequest,
+  className: String,
+  methodName: String
 )
 
 
