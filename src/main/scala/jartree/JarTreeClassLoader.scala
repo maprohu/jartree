@@ -41,19 +41,25 @@ class JarTreeClassLoader(
   }
 
   def loadClassShallow(name: String, resolve: Boolean) = {
-    try {
+//    try {
       super.loadClass(name, resolve)
-    } catch {
-      case ex: ClassNotFoundException =>
-        parent.loadClass(name)
-    }
+//    } catch {
+//      case ex: ClassNotFoundException =>
+//        parent.loadClass(name)
+//    }
   }
 
 
 
   import scala.collection.JavaConversions._
+  def getResourcesShallow(s: String): util.Enumeration[URL] = {
+    super.getResources(s)
+  }
   override def getResources(s: String): util.Enumeration[URL] = {
-    deps.iterator.flatMap(_.getResources(s)) ++ super.getResources(s)
+    super.getResources(s) ++
+      deps.iterator.flatMap(_.getResourcesShallow(s)) ++
+      parent.getResources(s)
+
   }
 
 //  val publicParent = new PublicClassLoader(
