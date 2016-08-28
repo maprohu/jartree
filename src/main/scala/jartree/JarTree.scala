@@ -27,17 +27,17 @@ object JarTree {
     hash.toArray
   }
 
-  def apply(
-    parentClassLoader: ClassLoader,
-    cache: JarCache
-  ): JarTree = new JarTree(parentClassLoader, cache)
+//  def apply(
+//    parentClassLoader: ClassLoader,
+//    cache: JarCache
+//  ): JarTree = new JarTree(parentClassLoader, cache)
 
 
 }
 
 class JarTree(
   parentClassLoader: ClassLoader,
-  cache: JarCache
+  resolver: JarResolver
 ) {
 
   val classLoaderMap = mutable.WeakHashMap.empty[ClassLoaderKey, Future[ClassLoader]]
@@ -46,7 +46,7 @@ class JarTree(
     request: ClassLoaderRequest
   )(implicit
     executionContext: ExecutionContext
-  ) : Future[ClassLoader] = {
+  ) : Future[Either[Seq[JarKey], ClassLoader]] = {
 
     val key = requestToKey(request)
 
@@ -58,7 +58,7 @@ class JarTree(
     key: ClassLoaderKey
   )(implicit
     executionContext: ExecutionContext
-  ) : Future[ClassLoader] = {
+  ) : Future[Either[Seq[JarKey], ClassLoader]] = {
     val producer = synchronized {
       classLoaderMap
         .get(key)

@@ -8,7 +8,7 @@ import org.apache.commons.codec.binary.Base64
 import org.apache.commons.io.IOUtils
 
 import scala.collection.immutable._
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
 /**
@@ -24,9 +24,66 @@ class JarCache(root: File) {
     file.delete()
   }
 
-  def get(hash: Hash, source: Source) : Future[File] = {
+  def copyToCache(
+    hash: Hash,
+    jarFile: File,
+    source: () => InputStream
+  ) = {
+    try {
+      val in = source()
+      val digestStream = createDigestInputStream(in)
+      val out = new FileOutputStream(jarFile)
+      try {
+        IOUtils.copy(digestStream, out)
+      } finally {
+        IOUtils.closeQuietly(digestStream, out)
+      }
+      require(digestStream.getMessageDigest.digest().sameElements(hash), "digest mismatch for jar")
+      jarFile
+    } catch {
+      case ex : Throwable =>
+        delete(jarFile)
+        throw ex
+    }
+
+  }
+
+  def toJarFile(hash: Hash) = {
     val fileName = s"${hashToString(hash)}.jar"
-    val jarFile = new File(root, fileName)
+    new File(root, fileName)
+  }
+
+
+  def set(
+    hash: Hash,
+    sourceFuture: Future[Source]
+  )(implicit
+    executionContext: ExecutionContext
+  ) : Unit = {
+    val jarFile = toJarFile(hash)
+
+    synchronized {
+      if (!locked.contains(jarFile) && !jarFile.exists()) {
+        locked = locked.updated(
+          jarFile,
+          sourceFuture
+            .map({ source =>
+              copyToCache(
+                hash,
+                jarFile,
+                source
+              )
+
+              jarFile
+            })
+        )
+      }
+    }
+
+  }
+
+  def get(hash: Hash, source: Source) : Future[File] = {
+    val jarFile = toJarFile(hash)
 
     val producer = synchronized {
       locked
@@ -43,22 +100,11 @@ class JarCache(root: File) {
             { () =>
               promise.complete(
                 Try {
-                  try {
-                    val in = source()
-                    val digestStream = createDigestInputStream(in)
-                    val out = new FileOutputStream(jarFile)
-                    try {
-                      IOUtils.copy(digestStream, out)
-                    } finally {
-                      IOUtils.closeQuietly(digestStream, out)
-                    }
-                    require(digestStream.getMessageDigest.digest().sameElements(hash), "digest mismatch for jar")
-                    jarFile
-                  } catch {
-                    case ex : Throwable =>
-                      delete(jarFile)
-                      throw ex
-                  }
+                  copyToCache(
+                    hash,
+                    jarFile,
+                    source
+                  )
                 }
               )
 
@@ -71,6 +117,22 @@ class JarCache(root: File) {
 
     producer()
 
+  }
+
+  def maybeGet(hash: Hash) : Option[Future[File]] = {
+    val jarFile = toJarFile(hash)
+
+    synchronized {
+      locked
+        .get(jarFile)
+        .orElse({
+          if (jarFile.exists()) {
+            Some(Future.successful(jarFile))
+          } else {
+            None
+          }
+        })
+    }
   }
 
 }
