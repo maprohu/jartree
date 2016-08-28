@@ -54,7 +54,7 @@ class JarCache(root: File) {
   }
 
 
-  def set(
+  def put(
     hash: Hash,
     sourceFuture: Future[Source]
   )(implicit
