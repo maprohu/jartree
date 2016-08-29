@@ -67,11 +67,21 @@ object JarResolver {
 
 }
 
-sealed trait JarKey
+sealed trait JarKey {
+  def groupId: String
+  def artifactId: String
+  def version : String
+  def classifier: Option[String]
+}
 
 case class HashJarKey(
   hash: JarTree.JarHash
-) extends JarKey
+) extends JarKey {
+  override def groupId: String = JarCache.hashToString(hash.toArray)
+  override def artifactId: String = JarCache.hashToString(hash.toArray)
+  override def version : String = "1.0.0"
+  override def classifier: Option[String] = None
+}
 
 case class MavenJarKey(
   groupId: String,
