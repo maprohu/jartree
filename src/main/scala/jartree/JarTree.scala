@@ -1,7 +1,7 @@
 package jartree
 
 import jartree.JarTree._
-import org.reactivestreams.Processor
+//import org.reactivestreams.Processor
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -92,14 +92,16 @@ object JarTree {
 
   }
 
+//  val threadLocal = new ThreadLocal[JarTree]()
 }
 
 class JarTree(
-  parentClassLoader: ClassLoader,
-  resolver: JarResolver
+  val parentClassLoader: ClassLoader,
+  val resolver: JarResolver
 ) {
 
   val classLoaderMap = mutable.WeakHashMap.empty[ClassLoaderKey, ResolutionResultAsync[JarTreeClassLoader]]
+
 
 //  def get(
 //    request: ClassLoaderRequest
@@ -243,9 +245,10 @@ class JarTree(
     producer()
   }
 
-  def run(
+  def run[T](
     request: RunRequest,
-    processor: Processor[Array[Byte], Array[Byte]]
+    runner: T => Unit
+//    processor: Processor[Array[Byte], Array[Byte]]
   )(implicit
     executionContext: ExecutionContext
   ) : ResolutionResultAsync[Unit] = {
@@ -257,14 +260,24 @@ class JarTree(
           Left(_),
           { cl =>
             val runClass = cl.loadClass(request.className)
-            val method = runClass.getMethod(
-              request.methodName,
-              classOf[Processor[_, _]]
-            )
-            method.invoke(
-              runClass.newInstance(),
-              processor
-            )
+//            val method = runClass.getMethod(
+//              request.methodName,
+//              classOf[Processor[_, _]]
+//            )
+
+            val instance = runClass.newInstance().asInstanceOf[T]
+
+            runner(instance)
+//            try {
+//              threadLocal.set(this)
+//
+//              method.invoke(
+//                runClass.newInstance(),
+//                processor
+//              )
+//            } finally {
+//              threadLocal.remove()
+//            }
             Right()
           }
         )
@@ -296,8 +309,8 @@ case class URLJarSource(
 
 case class RunRequest(
   classLoader: ClassLoaderKey,
-  className: String,
-  methodName: String
+  className: String
+//  methodName: String
 )
 
 

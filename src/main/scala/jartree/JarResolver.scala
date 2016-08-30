@@ -2,6 +2,7 @@ package jartree
 
 import java.net.URL
 
+import com.typesafe.scalalogging.LazyLogging
 import org.jboss.shrinkwrap.resolver.api.maven.{Maven, PackagingType}
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.{MavenCoordinate, MavenCoordinates}
 
@@ -11,7 +12,9 @@ import scala.util.{Failure, Try}
 /**
   * Created by martonpapp on 28/08/16.
   */
-class JarResolver(cache: JarCache) {
+class JarResolver(
+  val cache: JarCache
+) extends LazyLogging {
 
   def resolve(
     key: JarKey
@@ -51,7 +54,7 @@ class JarResolver(cache: JarCache) {
               .toURL
           }).recoverWith({
             case ex =>
-              ex.printStackTrace()
+              logger.error("error resolving jar", ex)
               Failure(ex)
           }).toOption
         }

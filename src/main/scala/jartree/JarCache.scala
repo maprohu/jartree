@@ -14,7 +14,9 @@ import scala.util.Try
 /**
   * Created by martonpapp on 27/08/16.
   */
-class JarCache(root: File) {
+class JarCache(
+  val root: File
+) {
 
   root.mkdirs()
 
