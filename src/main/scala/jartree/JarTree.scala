@@ -102,6 +102,9 @@ class JarTree(
 
   val classLoaderMap = mutable.WeakHashMap.empty[ClassLoaderKey, ResolutionResultAsync[JarTreeClassLoader]]
 
+  def clear() = synchronized {
+    classLoaderMap.clear()
+  }
 
 //  def get(
 //    request: ClassLoaderRequest
