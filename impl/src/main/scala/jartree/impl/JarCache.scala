@@ -3,6 +3,7 @@ package jartree.impl
 import java.io.{File, FileOutputStream, InputStream, OutputStream}
 import java.security.{DigestInputStream, MessageDigest}
 
+import jartree.util.{CaseJarKey, HashJarKeyImpl, MavenJarKeyImpl}
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.io.IOUtils
 
@@ -21,6 +22,9 @@ class JarCache(
 
   root.mkdirs()
 
+  val hashDir = new File(root, "hash")
+  val mavenDir = new File(root, "maven")
+
   var locked = Map.empty[File, Future[File]]
 
   def delete(file: File) = synchronized {
@@ -28,7 +32,7 @@ class JarCache(
   }
 
   def copyToCache(
-    hash: Hash,
+//    hash: Hash,
     jarFile: File,
     source: () => InputStream
   ) = {
@@ -41,7 +45,7 @@ class JarCache(
       } finally {
         IOUtils.closeQuietly(digestStream, out)
       }
-      require(digestStream.getMessageDigest.digest().sameElements(hash), "digest mismatch for jar")
+//      require(digestStream.getMessageDigest.digest().sameElements(hash), "digest mismatch for jar")
       jarFile
     } catch {
       case ex : Throwable =>
@@ -51,14 +55,33 @@ class JarCache(
 
   }
 
-  def toJarFile(hash: Hash) = {
-    val fileName = s"${hashToString(hash)}.jar"
-    new File(root, fileName)
+  def toJarFile(hash: CaseJarKey) : File = {
+    val file = hash match {
+      case h : HashJarKeyImpl =>
+        new File(
+          hashDir,
+          s"${hashToString(h.hash)}.jar"
+        )
+      case m : MavenJarKeyImpl =>
+        new File(
+          new File(
+            new File(
+              mavenDir,
+              m.groupId
+            ),
+            m.artifactId
+          ),
+          s"${m.version}${m.classifierOpt.map(c => s"-${c}")}.jar"
+        )
+    }
+
+    file.getParentFile.mkdirs()
+    file
   }
 
 
   def put(
-    hash: Hash,
+    hash: CaseJarKey,
     sourceFuture: Future[Source]
   )(implicit
     executionContext: ExecutionContext
@@ -72,7 +95,6 @@ class JarCache(
           sourceFuture
             .map({ source =>
               copyToCache(
-                hash,
                 jarFile,
                 source
               )
@@ -85,7 +107,7 @@ class JarCache(
 
   }
 
-  def get(hash: Hash, source: Source) : Future[File] = {
+  def get(hash: CaseJarKey, source: Source) : Future[File] = {
     val jarFile = toJarFile(hash)
 
     val producer = synchronized {
@@ -104,7 +126,6 @@ class JarCache(
               promise.complete(
                 Try {
                   copyToCache(
-                    hash,
                     jarFile,
                     source
                   )
@@ -122,7 +143,7 @@ class JarCache(
 
   }
 
-  def maybeGet(hash: Hash) : Option[Future[File]] = {
+  def maybeGet(hash: CaseJarKey) : Option[Future[File]] = {
     val jarFile = toJarFile(hash)
 
     synchronized {

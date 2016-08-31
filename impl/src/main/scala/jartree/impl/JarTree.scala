@@ -3,7 +3,6 @@ package jartree.impl
 import jartree._
 import jartree.impl.JarTree.{ResolutionResult, ResolutionResultAsync}
 import jartree.util.CaseClassLoaderKey
-//import org.reactivestreams.Processor
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -37,6 +36,8 @@ object JarTree {
   def apply(
     parentClassLoader: ClassLoader,
     resolver: JarResolver
+  )(implicit
+    executionContext: ExecutionContext
   ): JarTree = new JarTree(parentClassLoader, resolver)
 
 
@@ -110,8 +111,13 @@ class JarTree(
 
           { () =>
 
-            val jarFuture = resolver.resolve(
+            val jarOption = resolver.resolve(
               key.jar
+            )
+            val jarFuture = jarOption.map({ f =>
+              f.map(f => Some(f))
+            }).getOrElse(
+              Future.successful(None)
             )
             val parentsFuture = Future.sequence(
               key.dependencies

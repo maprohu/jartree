@@ -3,7 +3,11 @@ package jartree
 import java.io.{File, FileInputStream}
 
 import jartree.impl.JarCache
+import jartree.util.{CaseJarKey, HashJarKeyImpl}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.collection.immutable._
 import scala.io.StdIn
 
 /**
@@ -14,10 +18,7 @@ object RunJarCache {
   def main(args: Array[String]): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
 
-
-    println(new File("x") == new File("x"))
-
-    val sourceFile = new File("../jartree/target/jartree.jar")
+    val sourceFile = new File("../jartree/impl/target/product.jar")
 
     val source = () => new FileInputStream(sourceFile)
 
@@ -27,12 +28,19 @@ object RunJarCache {
 
     val hash = JarCache.calculateHash(source)
 
-    val file = cache.get(hash, source)
+    val file = cache.get(HashJarKeyImpl(
+      hash.to[Seq]
+    ), source)
 
-    file.foreach({ file =>
-      println(file.getAbsolutePath)
-      require(JarCache.calculateHash(() => new FileInputStream(file)).sameElements(hash))
-    })
+    Await.result(
+      file.map({ file =>
+        println(file.getAbsolutePath)
+        require(JarCache.calculateHash(() => new FileInputStream(file)).sameElements(hash))
+      }),
+      Duration.Inf
+    )
+
+
 
 
 

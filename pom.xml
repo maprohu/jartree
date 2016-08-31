@@ -15,11 +15,9 @@
         <module>impl</module>
     </modules>
 
-    <properties>
-        <version.shrinkwrap.resolvers>2.2.2</version.shrinkwrap.resolvers>
-    </properties>
+
     <build>
-        <finalName>jartree</finalName>
+        <finalName>product</finalName>
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -114,42 +112,7 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
         </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.10</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.5</version>
-        </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.reactivestreams</groupId>-->
-            <!--<artifactId>reactive-streams</artifactId>-->
-            <!--<version>1.0.0</version>-->
-        <!--</dependency>-->
-        <dependency>
-            <groupId>org.jboss.shrinkwrap.resolver</groupId>
-            <artifactId>shrinkwrap-resolver-api-maven</artifactId>
-            <version>${version.shrinkwrap.resolvers}</version>
-        </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.jboss.shrinkwrap.resolver</groupId>-->
-            <!--<artifactId>shrinkwrap-resolver-depchain</artifactId>-->
-            <!--<version>${version.shrinkwrap.resolvers}</version>-->
-            <!--<type>pom</type>-->
-        <!--</dependency>-->
-        <dependency>
-            <groupId>org.eclipse.aether</groupId>
-            <artifactId>aether-util</artifactId>
-            <version>1.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.scala-logging</groupId>
-            <artifactId>scala-logging_2.11</artifactId>
-            <version>3.4.0</version>
-        </dependency>
+
 
     </dependencies>
 

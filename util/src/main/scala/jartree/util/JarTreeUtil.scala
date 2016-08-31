@@ -1,6 +1,7 @@
 package jartree.util
 
 import jartree.{ClassLoaderKey, HashJarKey, JarKey, MavenJarKey}
+import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinates
 
 import scala.collection.immutable._
 import scala.collection.JavaConversions._
@@ -45,6 +46,21 @@ case class MavenJarKeyImpl(
   classifierOpt: Option[String]
 ) extends CaseJarKey with MavenJarKey {
   override def classifier(): String = classifierOpt.getOrElse("")
+}
+
+object MavenJarKeyImpl {
+
+  def apply(canonical: String) : MavenJarKeyImpl = {
+    val mc = MavenCoordinates.createCoordinate(canonical)
+
+    MavenJarKeyImpl(
+      mc.getGroupId,
+      mc.getArtifactId,
+      mc.getVersion,
+      Option(mc.getClassifier).filterNot(_.isEmpty)
+    )
+  }
+
 }
 
 

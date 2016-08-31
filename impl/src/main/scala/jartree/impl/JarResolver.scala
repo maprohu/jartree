@@ -20,45 +20,43 @@ class JarResolver(
     key: CaseJarKey
   )(implicit
     executionContext: ExecutionContext
-  ) : Future[Option[URL]] = {
+  ) : Option[Future[URL]] = {
 
-    key match {
-      case HashJarKeyImpl(hash) =>
-        cache.maybeGet(
-          JarTree.toJarCacheHash(hash)
-        ).map({ fileFuture =>
-          fileFuture.map({ file =>
-            Some(
-              file.toURI.toURL
-            )
-          })
-        }).getOrElse(
-          Future.successful(None)
-        )
-
-      case mvn : MavenJarKeyImpl =>
-        Future {
+    cache.maybeGet(
+      key
+    ).map({ ff =>
+      ff.map(_.toURI.toURL)
+    }).orElse({
+      key match {
+        case h : HashJarKeyImpl =>
+          None
+        case mvn : MavenJarKeyImpl =>
           Try({
-            import mvn._
-            val items =
-              Seq(groupId, artifactId) ++
-              classifier.toSeq ++
-              Seq(version)
+            Future {
+              import mvn._
+              val items =
+                Seq(groupId, artifactId) ++
+                  classifier.toSeq ++
+                  Seq(version)
 
-            Maven
-              .resolver()
-              .resolve(items.mkString(":"))
-              .withoutTransitivity()
-              .asSingleFile()
-              .toURI
-              .toURL
+              Maven
+                .resolver()
+                .resolve(items.mkString(":"))
+                .withoutTransitivity()
+                .asSingleFile()
+                .toURI
+                .toURL
+            }
           }).recoverWith({
             case ex =>
               logger.error("error resolving jar", ex)
               Failure(ex)
           }).toOption
-        }
-    }
+
+      }
+
+    })
+
 
   }
 
