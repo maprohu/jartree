@@ -26,16 +26,16 @@ object RunJarCache {
 
     val cache = JarCache(cacheDir)
 
-    val hash = JarCache.calculateHash(source)
+    val hash = JarCache.calculateHash(source())
 
     val file = cache.get(HashJarKeyImpl(
       hash.to[Seq]
-    ), source)
+    ), source())
 
     Await.result(
       file.map({ file =>
         println(file.getAbsolutePath)
-        require(JarCache.calculateHash(() => new FileInputStream(file)).sameElements(hash))
+        require(JarCache.calculateHash(new FileInputStream(file)).sameElements(hash))
       }),
       Duration.Inf
     )

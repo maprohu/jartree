@@ -1,5 +1,7 @@
 package jartree.util
 
+import java.util
+
 import jartree.{ClassLoaderKey, HashJarKey, JarKey, MavenJarKey}
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinates
 
@@ -66,12 +68,26 @@ object MavenJarKeyImpl {
 
 case class CaseClassLoaderKey(
   jar: CaseJarKey,
-  dependencies: Seq[CaseClassLoaderKey]
-)
+  dependenciesSeq: Seq[CaseClassLoaderKey]
+) extends ClassLoaderKey {
+  override def dependencies(): util.Collection[ClassLoaderKey] = dependenciesSeq
+}
 
 object CaseClassLoaderKey {
   def apply(clk: ClassLoaderKey) : CaseClassLoaderKey = apply(
     CaseJarKey(clk.jar),
     clk.dependencies.map(clk => CaseClassLoaderKey(clk)).to[Seq]
   )
+}
+
+case class RunRequestImpl(
+  classLoader: CaseClassLoaderKey,
+  className: String
+) extends jartree.RunRequest
+
+object RunRequestImpl {
+  def apply(
+    classLoaderKey: ClassLoaderKey,
+    className: String
+  ) = new RunRequestImpl(CaseClassLoaderKey(classLoaderKey), className)
 }

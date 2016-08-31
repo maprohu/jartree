@@ -1,8 +1,10 @@
 package jartree.impl
 
+import java.io.InputStream
+
 import jartree._
 import jartree.impl.JarTree.{ResolutionResult, ResolutionResultAsync}
-import jartree.util.CaseClassLoaderKey
+import jartree.util.{CaseClassLoaderKey, CaseJarKey}
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -42,7 +44,7 @@ object JarTree {
 
 
   def collectMavenParents(cl: CaseClassLoaderKey) : Seq[CaseClassLoaderKey] = {
-    cl.dependencies.flatMap({ p =>
+    cl.dependenciesSeq.flatMap({ p =>
       p +: collectMavenParents(p)
     })
   }
@@ -77,7 +79,7 @@ object JarTree {
         .map({ case (version, cl ) => cl })
         .to[Seq]
 
-    cl.copy(dependencies = newDependencies)
+    cl.copy(dependenciesSeq = newDependencies)
 
   }
 
@@ -120,7 +122,7 @@ class JarTree(
               Future.successful(None)
             )
             val parentsFuture = Future.sequence(
-              key.dependencies
+              key.dependenciesSeq
                 .map({ parent =>
                   get(parent)
                 })
@@ -168,11 +170,11 @@ class JarTree(
     producer()
   }
 
-  def run[T](
-    request: RunRequest,
-    callback: JarTreeRunnerCallback[T]
-  ) : Unit = {
-    val result = for {
+
+  def runInternal[T](
+    request: RunRequest
+  ) = {
+    for {
       maybeCl <- get(CaseClassLoaderKey(request.classLoader))
     } yield {
       maybeCl
@@ -183,12 +185,17 @@ class JarTree(
 
             val instance = runClass.newInstance().asInstanceOf[T]
 
-            callback.resolved(instance)
-
-            Right()
+            Right(instance)
           }
         )
     }
+  }
+
+  def run[T](
+    request: RunRequest,
+    callback: JarTreeRunnerCallback[T]
+  ) : Unit = {
+    val result = runInternal[T](request)
 
     result.onFailure({
       case ex : Throwable =>
@@ -197,12 +204,26 @@ class JarTree(
 
     import scala.collection.JavaConversions._
     result.onSuccess({
+      case Right(instance) =>
+        callback.resolved(instance)
       case Left(missing) =>
         callback.unresolved(missing)
     })
   }
 
+  override def cacheJar(jarKey: JarKey): JarCacheLoader = {
+    val promise = Promise[InputStream]()
 
+    resolver.cache.put(
+      CaseJarKey(jarKey),
+      promise.future
+    )
+
+    new JarCacheLoader {
+      override def failure(ex: Throwable): Unit = promise.failure(ex)
+      override def success(is: InputStream): Unit = promise.success(is)
+    }
+  }
 }
 
 

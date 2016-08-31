@@ -34,16 +34,16 @@ class JarCache(
   def copyToCache(
 //    hash: Hash,
     jarFile: File,
-    source: () => InputStream
+    in: InputStream
   ) = {
     try {
-      val in = source()
-      val digestStream = createDigestInputStream(in)
+//      val in = source()
+//      val digestStream = createDigestInputStream(in)
       val out = new FileOutputStream(jarFile)
       try {
-        IOUtils.copy(digestStream, out)
+        IOUtils.copy(in, out)
       } finally {
-        IOUtils.closeQuietly(digestStream, out)
+        IOUtils.closeQuietly(in, out)
       }
 //      require(digestStream.getMessageDigest.digest().sameElements(hash), "digest mismatch for jar")
       jarFile
@@ -164,7 +164,7 @@ class JarCache(
 object JarCache {
 
   type Hash = Array[Byte]
-  type Source = () => InputStream
+  type Source = InputStream
 
   def createDigest = {
     MessageDigest.getInstance("SHA-256")
@@ -174,8 +174,7 @@ object JarCache {
     new DigestInputStream(is, createDigest)
   }
 
-  def calculateHash(source: Source) : Hash = {
-    val in = source()
+  def calculateHash(in: Source) : Hash = {
     try {
       val digestInputStream = createDigestInputStream(in)
       IOUtils.copy(digestInputStream, new OutputStream {
