@@ -1,9 +1,8 @@
-package jartree
+package jartree.impl
 
 import java.io.{File, FileOutputStream, InputStream, OutputStream}
-import java.security.{DigestInputStream, DigestOutputStream, MessageDigest}
+import java.security.{DigestInputStream, MessageDigest}
 
-import jartree.JarCache._
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.io.IOUtils
 
@@ -14,6 +13,8 @@ import scala.util.Try
 /**
   * Created by martonpapp on 27/08/16.
   */
+import JarCache._
+
 class JarCache(
   val root: File
 ) {
