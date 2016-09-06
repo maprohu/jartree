@@ -102,6 +102,15 @@ class JarCache(
               jarFile
             })
         )
+      } else {
+        sourceFuture.onSuccess({
+          case source =>
+            try {
+              while (source.read() != -1) {}
+            } finally {
+              source.close()
+            }
+        })
       }
     }
 

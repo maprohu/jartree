@@ -3,7 +3,7 @@ package jartree.impl
 import java.io.InputStream
 
 import jartree._
-import jartree.impl.JarTree.{ResolutionResult, ResolutionResultAsync}
+import jartree.impl.JarTree.{ResolutionResult, ResolutionResultAsync, Unresolved}
 import jartree.util.{CaseClassLoaderKey, CaseJarKey}
 
 import scala.collection.immutable._
@@ -173,7 +173,7 @@ class JarTree(
 
   def runInternal[T](
     request: RunRequest
-  ) = {
+  ) : Future[Either[Unresolved, T]] = {
     for {
       maybeCl <- get(CaseClassLoaderKey(request.classLoader))
     } yield {
