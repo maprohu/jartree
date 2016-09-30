@@ -1,5 +1,6 @@
 package jartree.util
 
+import java.io.File
 import java.util
 
 import jartree.{ClassLoaderKey, HashJarKey, JarKey, MavenJarKey}
@@ -17,7 +18,7 @@ sealed trait CaseJarKey extends JarKey
 object CaseJarKey {
   def apply(
     jarKey: JarKey
-  ) = {
+  ) : CaseJarKey = {
     jarKey match {
       case k : HashJarKey =>
         HashJarKeyImpl(
@@ -64,6 +65,10 @@ object MavenJarKeyImpl {
   }
 
 }
+
+//case class FileJarKeyImpl(
+//  file: File
+//) extends CaseJarKey
 
 
 case class CaseClassLoaderKey(
