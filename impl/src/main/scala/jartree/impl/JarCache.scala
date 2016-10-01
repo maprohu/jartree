@@ -2,6 +2,8 @@ package jartree.impl
 
 import java.io.{File, FileOutputStream, InputStream, OutputStream}
 import java.security.{DigestInputStream, MessageDigest}
+import javax.xml.bind.DatatypeConverter
+import javax.xml.datatype.DatatypeFactory
 
 import jartree.util.{CaseJarKey, HashJarKeyImpl, MavenJarKeyImpl}
 import org.apache.commons.codec.binary.Base64
@@ -197,7 +199,14 @@ object JarCache {
 
   def hashToString(hash: Hash) : String = {
     Base64.encodeBase64URLSafeString(hash)
+//    DatatypeConverter.printHexBinary(hash)
   }
+
+//  def stringToHash(str: String) : Hash = {
+//    DatatypeConverter.parseHexBinary(str)
+//  }
+
+
 
   def apply(root: File): JarCache = new JarCache(root)
 
